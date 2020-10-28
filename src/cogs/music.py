@@ -1,3 +1,4 @@
+import typing
 import asyncio
 
 from discord import VoiceClient, FFmpegPCMAudio
