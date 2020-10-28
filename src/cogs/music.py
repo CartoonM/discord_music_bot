@@ -28,6 +28,8 @@ class Music(commands.Cog):
         'source_address': '0.0.0.0'}
 
     ytdl = YoutubeDL(YTDL_OPTIONS)
+    task_queue = []
+    voice_client = None
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
