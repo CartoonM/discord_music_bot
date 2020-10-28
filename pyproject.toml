@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "dios_bite"
+version = "0.1.0"
+description = ""
+authors = ["cartoonm"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+discord = "^1.0.1"
+youtube_dl = "^2020.9.20"
+pynacl = "^1.4.0"
+python_dotenv = "^0.14.0"
+
+[tool.poetry.dev-dependencies]
+flake8 = "^3.8.4"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
