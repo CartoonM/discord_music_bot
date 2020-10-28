@@ -48,24 +48,19 @@ class Music(commands.Cog):
     async def play(self, ctx: commands.Context, url: str):
         """Play."""
 
-        if ctx.voice_client is None:
+        if self.voice_client is None:
             await self.connect_to_voice_chat(ctx)
         if isinstance(ctx.voice_client, VoiceClient):
+            self.voice_client = ctx.voice_client
             if not ctx.voice_client.is_playing():
-                loop = asyncio.get_event_loop()
-                processed_info = await loop.run_in_executor(
-                                    None,
-                                    self.ytdl.extract_info, url,
-                                    False
-                            )
-                ctx.voice_client.play(
-                    FFmpegPCMAudio(
-                                processed_info['formats'][0]['url'],
-                                **self.FFMPEG_OPTIONS
-                                )
-                            )
+                await self.play_music(url, self.scroll_queue)
             else:
-                await ctx.send('Music is playing now.')
+                self.task_queue.append(url)
+                await ctx.send('Append to queue')
+
+    async def scroll_queue(self, error: Exception = None):
+        if len(self.task_queue) > 0:
+            await self.play_music(self.task_queue.pop(0), self.scroll_queue)
 
     async def connect_to_voice_chat(self, ctx: commands.Context):
         voice_channel = ctx.author.voice.channel
@@ -74,3 +69,22 @@ class Music(commands.Cog):
                 await voice_channel.connect()
             except CommandInvokeError:
                 pass
+
+    async def play_music(
+        self,
+        url: str,
+        after: typing.Callable
+    ):
+        loop = asyncio.get_event_loop()
+        processed_info = await loop.run_in_executor(
+                            None,
+                            self.ytdl.extract_info, url,
+                            False
+                    )
+        self.voice_client.play(
+                FFmpegPCMAudio(
+                        processed_info['formats'][0]['url'],
+                        **self.FFMPEG_OPTIONS
+                        ),
+                after=after
+                    )
