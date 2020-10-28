@@ -30,6 +30,7 @@ class Music(commands.Cog):
     ytdl = YoutubeDL(YTDL_OPTIONS)
     task_queue = []
     voice_client = None
+    next = asyncio.Event()
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -61,9 +62,8 @@ class Music(commands.Cog):
                 self.task_queue.append(url)
                 await ctx.send('Append to queue')
 
-    async def scroll_queue(self, error: Exception = None):
-        if len(self.task_queue) > 0:
-            await self.play_music(self.task_queue.pop(0), self.scroll_queue)
+    def scroll_queue(self, error: Exception = None):
+        self.next.set()
 
     async def connect_to_voice_chat(self, ctx: commands.Context):
         voice_channel = ctx.author.voice.channel
@@ -81,7 +81,8 @@ class Music(commands.Cog):
         loop = asyncio.get_event_loop()
         processed_info = await loop.run_in_executor(
                             None,
-                            self.ytdl.extract_info, url,
+                            self.ytdl.extract_info,
+                            url,
                             False
                     )
         self.voice_client.play(
@@ -91,3 +92,13 @@ class Music(commands.Cog):
                         ),
                 after=after
                     )
+
+        await asyncio.create_task(self.next_song())
+
+    async def next_song(self):
+        await self.next.wait()
+        if len(self.task_queue) > 0:
+            if self.voice_client.is_playing():
+                return
+            self.next.clear()
+            await self.play_music(self.task_queue.pop(0), self.scroll_queue)
