@@ -9,6 +9,6 @@ from cogs import Music
 load_dotenv()
 
 TOKEN = getenv('TOKEN')
-client = commands.Bot(command_prefix='!!')
+client = commands.Bot(command_prefix='@')
 client.add_cog(Music(client))
 client.run(TOKEN)
