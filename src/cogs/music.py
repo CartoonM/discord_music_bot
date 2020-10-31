@@ -3,7 +3,7 @@ import asyncio
 
 from discord import VoiceClient, FFmpegPCMAudio
 from discord.ext import commands
-from discord.ext.commands.errors import CommandInvokeError
+from discord.ext.commands.errors import CommandInvokeError, ClientException
 from youtube_dl import YoutubeDL, utils
 
 
@@ -81,7 +81,7 @@ class Music(commands.Cog):
         if voice_channel:
             try:
                 await voice_channel.connect()
-            except CommandInvokeError:
+            except(CommandInvokeError, ClientException):
                 pass
 
     def play_music(
