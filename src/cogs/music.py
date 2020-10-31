@@ -28,7 +28,7 @@ class Music(commands.Cog):
         'source_address': '0.0.0.0'}
 
     ytdl = YoutubeDL(YTDL_OPTIONS)
-    task_queue = []
+    song_queue = list()
     voice_client = None
     next = asyncio.Event()
 
@@ -68,8 +68,8 @@ class Music(commands.Cog):
                                 url,
                                 False
                             )
-            self.task_queue.append(processed_info['formats'][0]['url'])
-            await ctx.send(f'Место в очереди: {len(self.task_queue)}')
+            self.song_queue.append(processed_info['formats'][0]['url'])
+            await ctx.send(f'Место в очереди: {len(self.song_queue)}')
         except utils.DownloadError:
             await ctx.send('Не удалось загрузить видео 🤬')
 
@@ -97,8 +97,8 @@ class Music(commands.Cog):
     async def next_song(self):
         if self.voice_client.is_playing():
             await self.next.wait()
-        if len(self.task_queue) > 0:
+        if len(self.song_queue) > 0:
             if self.next.is_set:
                 self.next.clear()
-            self.play_music(self.task_queue.pop(0),
+            self.play_music(self.song_queue.pop(0),
                             self.scroll_queue)
