@@ -4,7 +4,7 @@ import asyncio
 from discord import VoiceClient, FFmpegPCMAudio
 from discord.ext import commands
 from discord.ext.commands.errors import CommandInvokeError
-from youtube_dl import YoutubeDL
+from youtube_dl import YoutubeDL, utils
 
 
 class Music(commands.Cog):
