@@ -48,19 +48,30 @@ class Music(commands.Cog):
         if ctx.voice_client:
             await ctx.voice_client.disconnect()
 
-    @commands.command(name='play')
+    @commands.command(name='play', aliases=['p'])
     async def play(self, ctx: commands.Context, url: str):
         """Play."""
 
+        await asyncio.create_task(self.add_task(url, ctx))
         if self.voice_client is None:
             await self.connect_to_voice_chat(ctx)
         if isinstance(ctx.voice_client, VoiceClient):
             self.voice_client = ctx.voice_client
-            if not ctx.voice_client.is_playing():
-                await self.play_music(url, self.scroll_queue)
-            else:
-                self.task_queue.append(url)
-                await ctx.send('Append to queue')
+            await asyncio.create_task(self.next_song())
+
+    async def add_task(self, url: str, ctx: commands.Context):
+        loop = asyncio.get_event_loop()
+        try:
+            processed_info = await loop.run_in_executor(
+                                None,
+                                self.ytdl.extract_info,
+                                url,
+                                False
+                            )
+            self.task_queue.append(processed_info['formats'][0]['url'])
+            await ctx.send(f'Место в очереди: {len(self.task_queue)}')
+        except utils.DownloadError:
+            await ctx.send('Не удалось загрузить видео 🤬')
 
     def scroll_queue(self, error: Exception = None):
         self.next.set()
@@ -73,32 +84,21 @@ class Music(commands.Cog):
             except CommandInvokeError:
                 pass
 
-    async def play_music(
+    def play_music(
         self,
         url: str,
         after: typing.Callable
     ):
-        loop = asyncio.get_event_loop()
-        processed_info = await loop.run_in_executor(
-                            None,
-                            self.ytdl.extract_info,
-                            url,
-                            False
-                    )
         self.voice_client.play(
-                FFmpegPCMAudio(
-                        processed_info['formats'][0]['url'],
-                        **self.FFMPEG_OPTIONS
-                        ),
+                FFmpegPCMAudio(url, **self.FFMPEG_OPTIONS),
                 after=after
                     )
 
-        await asyncio.create_task(self.next_song())
-
     async def next_song(self):
-        await self.next.wait()
+        if self.voice_client.is_playing():
+            await self.next.wait()
         if len(self.task_queue) > 0:
-            if self.voice_client.is_playing():
-                return
-            self.next.clear()
-            await self.play_music(self.task_queue.pop(0), self.scroll_queue)
+            if self.next.is_set:
+                self.next.clear()
+            self.play_music(self.task_queue.pop(0),
+                            self.scroll_queue)
