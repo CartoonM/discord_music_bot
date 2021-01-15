@@ -1,10 +1,12 @@
 import typing
 import asyncio
+from functools import partial
 
 from discord import VoiceClient, FFmpegPCMAudio
 from discord.ext import commands
 from discord.ext.commands.errors import CommandInvokeError, ClientException
 from youtube_dl import YoutubeDL, utils
+from loguru import logger
 
 
 class Music(commands.Cog):
