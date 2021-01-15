@@ -33,6 +33,7 @@ class Music(commands.Cog):
     song_queue = list()
     voice_client = None
     next = asyncio.Event()
+    current_task = None
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -91,21 +92,29 @@ class Music(commands.Cog):
             except(CommandInvokeError, ClientException):
                 pass
 
-    def play_music(
-        self,
-        url: str,
-        after: typing.Callable
-    ):
-        self.voice_client.play(
-                FFmpegPCMAudio(url, **self.FFMPEG_OPTIONS),
-                after=after
-                    )
+    async def play_music(self):
+
+        loop = asyncio.get_running_loop()
+
+        while True:
+            await self.next.wait()
+            self.next.clear()
+
+            if len(self.song_queue) < 1:
+                continue
+
+            discord_play_partial = partial(
+                self.voice_client.play,
+                FFmpegPCMAudio(self.song_queue.pop(0), **self.FFMPEG_OPTIONS),
+                after=self.scroll_queue
+            )
+            await loop.run_in_executor(None, discord_play_partial)
 
     async def next_song(self):
-        if self.voice_client.is_playing():
-            await self.next.wait()
-        if len(self.song_queue) > 0:
-            if self.next.is_set:
-                self.next.clear()
-            self.play_music(self.song_queue.pop(0),
-                            self.scroll_queue)
+        if self.current_task is None:
+            self.current_task = asyncio.create_task(self.play_music())
+            self.scroll_queue()
+            await self.current_task
+        else:
+            if not self.voice_client.is_playing():
+                self.scroll_queue()
