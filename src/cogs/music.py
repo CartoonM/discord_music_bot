@@ -61,8 +61,13 @@ class Music(commands.Cog):
             self.voice_client = ctx.voice_client
             await asyncio.create_task(self.next_song())
 
+    @commands.command(name='qs')
+    async def queue_size(self, ctx: commands.Context):
+
+        await ctx.send(str(len(self.song_queue)))
+
     async def add_task(self, url: str, ctx: commands.Context):
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         try:
             processed_info = await loop.run_in_executor(
                                 None,
